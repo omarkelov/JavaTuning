@@ -1,0 +1,30 @@
+plugins {
+    id 'application'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.12'
+    implementation 'org.ow2.asm:asm:9.1'
+}
+
+mainClassName = 'GuessNumber'
+
+application {
+    mainClassName = 'GuessNumber'
+}
+
+jar {
+    archivesBaseName = 'generate-guess-number-game'
+
+    manifest {
+        attributes 'Main-Class': mainClassName
+    }
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
