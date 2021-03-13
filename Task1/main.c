@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 #define reverse2bytes(x) (((x)<<8) | ((x)>>8))
 #define reverse4bytes(x) ((((x)<<24) & 0xff000000) | (((x)<<8) & 0xff0000) | (((x)>>8) & 0xff00) | (((x)>>24) & 0xff))
@@ -83,7 +84,7 @@ typedef struct CONSTANT_Class_info {
 
 typedef struct CONSTANT_Fieldref_info {
     u1 tag;
-	u2 class_index;
+    u2 class_index;
     u2 name_and_type_index;
 } CONSTANT_Fieldref_info;
 
@@ -212,7 +213,7 @@ typedef struct classfile {
     attribute_info *attributes;
 } classfile;
 
-classfile parse_class_file(FILE* file) {
+classfile parse_class_file(FILE *file) {
     classfile class_file;
 
     fread(&class_file.magic, sizeof(class_file.magic), 1, file);
@@ -344,80 +345,131 @@ classfile parse_class_file(FILE* file) {
     return class_file;
 }
 
-void print_class_file(classfile class_file) {
+void put_entry(classfile class_file, int i, char *buffer) {
+    char new_buffer[1024];
     u4 float_val;
-	u8 double_val;
+    u8 double_val;
 
-    printf("Minor version: %d\n", class_file.minor_version);
-    printf("Major version: %d\n", class_file.major_version);
-
-    for (int i = 0; i < class_file.constant_pool_count - 1; i++) {
-        printf("#%-6d%-16s", i + 1, get_constant_name(class_file.constant_pool[i].tag));
-        switch (class_file.constant_pool[i].tag) {
-            case CONSTANT_Utf8:
-                for (int j = 0; j < ((CONSTANT_Utf8_info*)class_file.constant_pool[i].info)->length; ++j) {
-                    printf("%c", ((CONSTANT_Utf8_info*)class_file.constant_pool[i].info)->bytes[j]);
-                }
-                break;
-            case CONSTANT_Integer:
-                printf("%d", ((CONSTANT_Integer_info*)class_file.constant_pool[i].info)->bytes);
-                break;
-            case CONSTANT_Float:
-                float_val = ((CONSTANT_Float_info*)class_file.constant_pool[i].info)->bytes;
-                if (float_val == 0x7f800000) {
-                    printf("Infinity");
-                } else if (float_val == 0xff800000) {
-                    printf("-Infinity");
-                } else if ((float_val >= 0x7f800001 && float_val <= 0x7fffffff) || (float_val >= 0xff800001 && float_val <= 0xffffffff)) {
-                    printf("NaN");
-                } else {
-                    printf("%e", *(float*)(&float_val));
-                }
-                break;
-            case CONSTANT_Long:
-                printf("%lld", ((u8)((CONSTANT_Long_info*)class_file.constant_pool[i].info)->high_bytes << 32) + ((CONSTANT_Long_info*)class_file.constant_pool[i].info)->low_bytes);
-                i++;
-                break;
-            case CONSTANT_Double:
-                double_val = ((u8)((CONSTANT_Double_info*)class_file.constant_pool[i].info)->high_bytes << 32) + ((CONSTANT_Double_info*)class_file.constant_pool[i].info)->low_bytes;
-                if (double_val == 0x7ff0000000000000L) {
-                    printf("Infinity");
-                } else if (double_val == 0xfff0000000000000L) {
-                    printf("-Infinity");
-                } else if ((double_val >= 0x7ff0000000000001L && double_val <= 0x7fffffffffffffffL) || (double_val >= 0xfff0000000000001L && double_val <= 0xffffffffffffffffL)) {
-                    printf("NaN");
-                } else {
-                    printf("%e", *(double*)(&double_val));
-                }
-                i++;
-                break;
-            case CONSTANT_Class:
-                printf("#%d", ((CONSTANT_Class_info*)class_file.constant_pool[i].info)->name_index);
-                break;
-            case CONSTANT_String:
-                printf("#%d", ((CONSTANT_String_info*)class_file.constant_pool[i].info)->string_index);
-                break;
-            case CONSTANT_Fieldref:
-                printf("#%d.#%d", ((CONSTANT_Fieldref_info*)class_file.constant_pool[i].info)->class_index, ((CONSTANT_Fieldref_info*)class_file.constant_pool[i].info)->name_and_type_index);
-                break;
-            case CONSTANT_Methodref:
-                printf("#%d.#%d", ((CONSTANT_Methodref_info*)class_file.constant_pool[i].info)->class_index, ((CONSTANT_Methodref_info*)class_file.constant_pool[i].info)->name_and_type_index);
-                break;
-            case CONSTANT_InterfaceMethodref:
-                break;
-            case CONSTANT_NameAndType:
-                printf("#%d:#%d", ((CONSTANT_NameAndType_info*)class_file.constant_pool[i].info)->name_index, ((CONSTANT_NameAndType_info*)class_file.constant_pool[i].info)->descriptor_index);
-                break;
-            case CONSTANT_MethodHandle:
-            case CONSTANT_MethodType:
-            case CONSTANT_Dynamic:
-            case CONSTANT_InvokeDynamic:
-            case CONSTANT_Module:
-            case CONSTANT_Package:
-            default:
-                break;
-        }
-        printf("\n");
+    switch(class_file.constant_pool[i].tag) {
+        case CONSTANT_Utf8:
+            memcpy(buffer, ((CONSTANT_Utf8_info*)class_file.constant_pool[i].info)->bytes, ((CONSTANT_Utf8_info*)class_file.constant_pool[i].info)->length);
+            buffer[((CONSTANT_Utf8_info*)class_file.constant_pool[i].info)->length] = 0;
+            break;
+        case CONSTANT_Integer:
+            sprintf(buffer, "%d", ((CONSTANT_Integer_info*)class_file.constant_pool[i].info)->bytes);
+            break;
+        case CONSTANT_Float:
+            float_val = ((CONSTANT_Float_info*)class_file.constant_pool[i].info)->bytes;
+            if (float_val == 0x7f800000) {
+                sprintf(buffer, "Infinity");
+            } else if (float_val == 0xff800000) {
+                sprintf(buffer, "-Infinity");
+            } else if ((float_val >= 0x7f800001 && float_val <= 0x7fffffff) || (float_val >= 0xff800001 && float_val <= 0xffffffff)) {
+                sprintf(buffer, "NaN");
+            } else {
+                sprintf(buffer, "%e", *(float*)(&float_val));
+            }
+            break;
+        case CONSTANT_Long:
+            sprintf(buffer, "%lld", ((u8)((CONSTANT_Long_info*)class_file.constant_pool[i].info)->high_bytes << 32) + ((CONSTANT_Long_info*)class_file.constant_pool[i].info)->low_bytes);
+            break;
+        case CONSTANT_Double:
+            double_val = ((u8)((CONSTANT_Double_info*)class_file.constant_pool[i].info)->high_bytes << 32) + ((CONSTANT_Double_info*)class_file.constant_pool[i].info)->low_bytes;
+            if (double_val == 0x7ff0000000000000L) {
+                sprintf(buffer, "Infinity");
+            } else if (double_val == 0xfff0000000000000L) {
+                sprintf(buffer, "-Infinity");
+            } else if ((double_val >= 0x7ff0000000000001L && double_val <= 0x7fffffffffffffffL) || (double_val >= 0xfff0000000000001L && double_val <= 0xffffffffffffffffL)) {
+                sprintf(buffer, "NaN");
+            } else {
+                sprintf(buffer, "%e", *(double*)(&double_val));
+            }
+            break;
+        case CONSTANT_Class:
+            sprintf(new_buffer, "#%d", ((CONSTANT_Class_info*)class_file.constant_pool[i].info)->name_index);
+            sprintf(buffer, "%-24s", new_buffer);
+            put_entry(class_file, ((CONSTANT_Class_info*) class_file.constant_pool[i].info)->name_index - 1, new_buffer);
+            strcat(buffer, "// ");
+            strcat(buffer, new_buffer);
+            break;
+        case CONSTANT_String:
+            sprintf(new_buffer, "#%d", ((CONSTANT_String_info*)class_file.constant_pool[i].info)->string_index);
+            sprintf(buffer, "%-24s", new_buffer);
+            put_entry(class_file, ((CONSTANT_String_info*)class_file.constant_pool[i].info)->string_index - 1, new_buffer);
+            strcat(buffer, "// ");
+            strcat(buffer, new_buffer);
+            break;
+        case CONSTANT_Fieldref:
+            sprintf(new_buffer, "#%d.#%d", ((CONSTANT_Fieldref_info*)class_file.constant_pool[i].info)->class_index, ((CONSTANT_Fieldref_info*)class_file.constant_pool[i].info)->name_and_type_index);
+            sprintf(buffer, "%-24s", new_buffer);
+            put_entry(class_file, ((CONSTANT_Class_info*) class_file.constant_pool[((CONSTANT_Fieldref_info*) class_file.constant_pool[i].info)->class_index - 1].info)->name_index - 1, new_buffer);
+            strcat(buffer, "// ");
+            strcat(buffer, new_buffer);
+            strcat(buffer, ".");
+            put_entry(class_file, ((CONSTANT_NameAndType_info*) class_file.constant_pool[((CONSTANT_Fieldref_info*) class_file.constant_pool[i].info)->name_and_type_index - 1].info)->name_index - 1, new_buffer);
+            strcat(buffer, new_buffer);
+            strcat(buffer, ":");
+            put_entry(class_file, ((CONSTANT_NameAndType_info*) class_file.constant_pool[((CONSTANT_Fieldref_info*) class_file.constant_pool[i].info)->name_and_type_index - 1].info)->descriptor_index - 1, new_buffer);
+            strcat(buffer, new_buffer);
+            break;
+        case CONSTANT_Methodref:
+            sprintf(new_buffer, "#%d.#%d", ((CONSTANT_Methodref_info*)class_file.constant_pool[i].info)->class_index, ((CONSTANT_Methodref_info*)class_file.constant_pool[i].info)->name_and_type_index);
+            sprintf(buffer, "%-24s", new_buffer);
+            put_entry(class_file, ((CONSTANT_Class_info*) class_file.constant_pool[((CONSTANT_Methodref_info*) class_file.constant_pool[i].info)->class_index - 1].info)->name_index - 1, new_buffer);
+            strcat(buffer, "// ");
+            strcat(buffer, new_buffer);
+            strcat(buffer, ".");
+            put_entry(class_file, ((CONSTANT_NameAndType_info*) class_file.constant_pool[((CONSTANT_Methodref_info*) class_file.constant_pool[i].info)->name_and_type_index - 1].info)->name_index - 1, new_buffer);
+            strcat(buffer, new_buffer);
+            strcat(buffer, ":");
+            put_entry(class_file, ((CONSTANT_NameAndType_info*) class_file.constant_pool[((CONSTANT_Methodref_info*) class_file.constant_pool[i].info)->name_and_type_index - 1].info)->descriptor_index - 1, new_buffer);
+            strcat(buffer, new_buffer);
+            break;
+        case CONSTANT_InterfaceMethodref:
+            sprintf(new_buffer, "#%d.#%d", ((CONSTANT_InterfaceMethodref_info*)class_file.constant_pool[i].info)->class_index, ((CONSTANT_InterfaceMethodref_info*)class_file.constant_pool[i].info)->name_and_type_index);
+            sprintf(buffer, "%-24s", new_buffer);
+            put_entry(class_file, ((CONSTANT_Class_info*) class_file.constant_pool[((CONSTANT_InterfaceMethodref_info*) class_file.constant_pool[i].info)->class_index - 1].info)->name_index - 1, new_buffer);
+            strcat(buffer, "// ");
+            strcat(buffer, new_buffer);
+            strcat(buffer, ".");
+            put_entry(class_file, ((CONSTANT_NameAndType_info*) class_file.constant_pool[((CONSTANT_InterfaceMethodref_info*) class_file.constant_pool[i].info)->name_and_type_index - 1].info)->name_index - 1, new_buffer);
+            strcat(buffer, new_buffer);
+            strcat(buffer, ":");
+            put_entry(class_file, ((CONSTANT_NameAndType_info*) class_file.constant_pool[((CONSTANT_InterfaceMethodref_info*) class_file.constant_pool[i].info)->name_and_type_index - 1].info)->descriptor_index - 1, new_buffer);
+            strcat(buffer, new_buffer);
+            break;
+        case CONSTANT_NameAndType:
+            sprintf(new_buffer, "#%d:#%d", ((CONSTANT_NameAndType_info*)class_file.constant_pool[i].info)->name_index, ((CONSTANT_NameAndType_info*)class_file.constant_pool[i].info)->descriptor_index);
+            sprintf(buffer, "%-24s// ", new_buffer);
+            put_entry(class_file, ((CONSTANT_NameAndType_info*) class_file.constant_pool[i].info)->name_index - 1, new_buffer);
+            strcat(buffer, new_buffer);
+            strcat(buffer, ":");
+            put_entry(class_file, ((CONSTANT_NameAndType_info*) class_file.constant_pool[i].info)->descriptor_index - 1, new_buffer);
+            strcat(buffer, new_buffer);
+            break;
+        case CONSTANT_MethodType:
+            sprintf(new_buffer, "#%d", ((CONSTANT_MethodType_info*)class_file.constant_pool[i].info)->descriptor_index);
+            sprintf(buffer, "%-24s// ", new_buffer);
+            put_entry(class_file, ((CONSTANT_MethodType_info*) class_file.constant_pool[i].info)->descriptor_index - 1, new_buffer);
+            strcat(buffer, new_buffer);
+            break;
+        case CONSTANT_Module:
+            sprintf(new_buffer, "#%d", ((CONSTANT_Module_info*)class_file.constant_pool[i].info)->name_index);
+            sprintf(buffer, "%-24s// ", new_buffer);
+            put_entry(class_file, ((CONSTANT_Module_info*) class_file.constant_pool[i].info)->name_index - 1, new_buffer);
+            strcat(buffer, new_buffer);
+            break;
+        case CONSTANT_Package:
+            sprintf(new_buffer, "#%d", ((CONSTANT_Package_info*)class_file.constant_pool[i].info)->name_index);
+            sprintf(buffer, "%-24s// ", new_buffer);
+            put_entry(class_file, ((CONSTANT_Package_info*) class_file.constant_pool[i].info)->name_index - 1, new_buffer);
+            strcat(buffer, new_buffer);
+            break;
+        case CONSTANT_MethodHandle:
+        case CONSTANT_Dynamic:
+        case CONSTANT_InvokeDynamic:
+        default:
+            break;
     }
 }
 
@@ -427,7 +479,7 @@ int main(int argc, char **argv) {
         return 13;
     }
 
-    FILE* file;
+    FILE *file;
     if ((file = fopen(argv[1], "rb")) == 0) {
         perror("Cannot open the file");
         return 13;
@@ -436,7 +488,21 @@ int main(int argc, char **argv) {
     classfile class_file = parse_class_file(file);
     fclose(file);
 
-    print_class_file(class_file);
+    printf("Minor version: %d\n", class_file.minor_version);
+    printf("Major version: %d\n", class_file.major_version);
+    printf("Constant pool:\n");
+
+    char buffer[1024];
+    for (int i = 0; i < class_file.constant_pool_count - 1; i++) {
+        printf("#%-6d%-16s", i + 1, get_constant_name(class_file.constant_pool[i].tag));
+
+        put_entry(class_file, i, buffer);
+        printf("%s\n", buffer);
+
+        if (class_file.constant_pool[i].tag == CONSTANT_Long || class_file.constant_pool[i].tag == CONSTANT_Double) {
+            i++;
+        }
+    }
 
     return 0;
 }
