@@ -1,0 +1,33 @@
+plugins {
+    id 'application'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation group: 'org.javassist', name: 'javassist', version: '3.27.0-GA'
+    testImplementation 'junit:junit:4.12'
+}
+
+mainClassName = 'JavaAgent'
+
+application {
+    mainClassName = mainClassName
+}
+
+jar {
+    archivesBaseName = 'agent'
+
+    manifest {
+        attributes 'Agent-Class': mainClassName
+        attributes 'PreMain-Class': mainClassName
+        attributes 'Can-Redefine-Classes': true
+        attributes 'Can-Retransform-Classes': true
+    }
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}

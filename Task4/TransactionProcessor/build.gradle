@@ -1,0 +1,29 @@
+plugins {
+    id 'application'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.12'
+}
+
+mainClassName = 'TransactionProcessor'
+
+application {
+    mainClassName = mainClassName
+}
+
+jar {
+    archivesBaseName = 'transaction-processor'
+
+    manifest {
+        attributes 'Main-Class': mainClassName
+    }
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
