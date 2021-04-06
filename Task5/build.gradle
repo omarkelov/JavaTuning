@@ -1,0 +1,37 @@
+plugins {
+    id 'application'
+    id 'antlr'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    antlr 'org.antlr:antlr4:4.9.2'
+    compileOnly 'org.antlr:antlr4-runtime:4.9.2'
+    implementation 'org.ow2.asm:asm:9.1'
+    implementation group: 'commons-io', name: 'commons-io', version: '2.6'
+}
+
+generateGrammarSource {
+    maxHeapSize = '64m'
+    arguments += ['-package', 'antlr']
+    outputDirectory = new File('src/main/java/antlr')
+}
+
+application {
+    mainClassName('Main')
+}
+
+jar {
+    archivesBaseName = 'LangCompiler'
+
+    manifest {
+        attributes 'Main-Class': application.mainClass
+    }
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
