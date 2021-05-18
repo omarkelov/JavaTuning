@@ -24,12 +24,8 @@ void *getCpuInfo() {
         return map;
     }
 
-    for (;;) {
-        char buffer[1024];
-        if (!fgets(buffer, sizeof(buffer), file) || buffer[0] == '\n') {
-            break;
-        }
-
+    char buffer[1024];
+    while (fgets(buffer, sizeof(buffer), file) && buffer[0] != '\n') {
         char *key = strtok(buffer, ":");
         char *value = strtok(NULL, ":");
 
