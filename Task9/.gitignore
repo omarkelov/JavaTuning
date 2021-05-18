@@ -1,0 +1,15 @@
+.gradle/
+.idea/
+build/
+gradle/
+out/
+
+gradlew
+gradlew.bat
+
+cmd_results.txt
+
+*.class
+
+# virtual machine crash logs
+hs_err_pid*

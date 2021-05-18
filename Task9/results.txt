@@ -1,0 +1,16 @@
+Benchmark                               (str)  Mode  Cnt     Score    Error  Units
+IntParsersBenchmark.parseChars            123  avgt   15     6,007 ±  0,047  ns/op
+IntParsersBenchmark.parseChars      123456789  avgt   15    12,868 ±  0,136  ns/op
+IntParsersBenchmark.parseChars      1234+6789  avgt   15     7,895 ±  0,084  ns/op
+IntParsersBenchmark.parseChars          1234+  avgt   15     7,867 ±  0,020  ns/op
+IntParsersBenchmark.parseChars  Just a string  avgt   15     3,297 ±  0,003  ns/op
+IntParsersBenchmark.parseInt              123  avgt   15    10,237 ±  0,039  ns/op
+IntParsersBenchmark.parseInt        123456789  avgt   15    24,125 ±  0,300  ns/op
+IntParsersBenchmark.parseInt        1234+6789  avgt   15  1213,896 ± 19,490  ns/op
+IntParsersBenchmark.parseInt            1234+  avgt   15  1219,795 ± 17,685  ns/op
+IntParsersBenchmark.parseInt    Just a string  avgt   15  1219,141 ± 22,261  ns/op
+IntParsersBenchmark.parseRegex            123  avgt   15    34,890 ±  0,228  ns/op
+IntParsersBenchmark.parseRegex      123456789  avgt   15    48,428 ±  7,087  ns/op
+IntParsersBenchmark.parseRegex      1234+6789  avgt   15    40,651 ±  0,794  ns/op
+IntParsersBenchmark.parseRegex          1234+  avgt   15    49,774 ±  5,057  ns/op
+IntParsersBenchmark.parseRegex  Just a string  avgt   15    33,756 ±  6,619  ns/op
